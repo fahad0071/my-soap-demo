@@ -43,7 +43,9 @@ app = Application([CurrencyService], tns='currency.soap',
 
 wsgi_app = WsgiApplication(app)
 
-if __name__ == '__main__':
-    server = make_server('0.0.0.0', 8000, wsgi_app)
-    print("Custom SOAP Server running on http://localhost:8000/?wsdl")
+import os
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    server = make_server("0.0.0.0", port, wsgi_app)
+    print(f"SOAP server running on port {port}")
     server.serve_forever()
