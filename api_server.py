@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend access
 
 # 👇 After deploying the SOAP service, update this URL with your Render SOAP endpoint
-CUSTOM_SOAP_WSDL = 'https://my-soap-demo.onrender.com/'
+CUSTOM_SOAP_WSDL = 'https://soap-service.onrender.com/?wsdl'
 TEMP_THIRD_PARTY_WSDL = 'https://www.w3schools.com/xml/tempconvert.asmx?WSDL'
 CALC_THIRD_PARTY_WSDL = 'http://www.dneonline.com/calculator.asmx?WSDL'
 
