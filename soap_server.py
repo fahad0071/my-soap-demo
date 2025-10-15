@@ -2,6 +2,7 @@ from spyne import Application, ServiceBase, Unicode, Double, Iterable, ComplexMo
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 from wsgiref.simple_server import make_server
+import os
 
 # Define a complex type for rates response
 class Rate(ComplexModel):
@@ -33,19 +34,33 @@ class CurrencyService(ServiceBase):
     def get_rates(ctx, base_currency):
         if base_currency not in CurrencyService.supported_currencies:
             raise ValueError("Invalid base currency")
+        base_rate = CurrencyService.fallback_rates[base_currency]
         for currency, rate in CurrencyService.fallback_rates.items():
             if currency != base_currency:
-                yield Rate(currency=currency, rate=rate / CurrencyService.fallback_rates[base_currency])
+                yield Rate(currency=currency, rate=rate / base_rate)
 
 app = Application([CurrencyService], tns='currency.soap',
                   in_protocol=Soap11(validator='lxml'),
                   out_protocol=Soap11())
 
-wsgi_app = WsgiApplication(app)
+# Custom WSGI wrapper to serve WSDL on GET ?wsdl
+def application(environ, start_response):
+    if environ.get('REQUEST_METHOD') == 'GET' and  environ.get('QUERY_STRING', '') == 'wsdl':
+        # Generate WSDL (use full URL base for portability)
+        base_url = f"http://{environ.get('HTTP_HOST', 'localhost:8000')}?wsdl"
+        wsdl_content = app.wsdl11.build_interface_document(base_url)
+        wsdl_bytes = wsdl_content.encode('utf-8')
+        start_response('200 OK', [
+            ('Content-Type', 'text/xml; charset=utf-8'),
+            ('Content-Length', str(len(wsdl_bytes)))
+        ])
+        return [wsdl_bytes]
+    else:
+        # Delegate to Spyne for SOAP POST
+        return WsgiApplication(app)(environ, start_response)
 
-import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    server = make_server("0.0.0.0", port, wsgi_app)
+    server = make_server("0.0.0.0", port, application)
     print(f"SOAP server running on port {port}")
     server.serve_forever()
