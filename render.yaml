@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: soap-server
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python soap_server.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
